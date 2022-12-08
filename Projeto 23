@@ -1,0 +1,516 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void cad();
+void consult();
+void alteracao();
+void exclusao_log();
+void exclusao_fis();
+void ordena_cod();
+void acha_nome();
+int posicao_registro();
+void recuperacao_dados();
+
+struct Doceria
+{
+    char nome_doceria[20];
+    int codigo;
+    int total_funcionarios;
+    float arrecadacao;
+    int e;
+} D;
+
+FILE * fptr;
+
+int main()
+{
+    char opcao;
+
+    do
+    {
+        // system("cls");
+
+        printf("\n1 - Cadastro de doceria");
+        printf("\n2 - Consulta das docerias");
+        printf("\n3 - Alteracao de uma doceria (muda qtd de funcionarios)");
+        printf("\n4 - Exclusao logica de uma doceria ");
+        printf("\n5 - Exclusao fisica das docerias exlcuidas logicamente");
+        printf("\n6 - Ordenacao (pelo codigo de maneira decrescente) ");
+        printf("\n7 - Busca binaria (digite o nome que quer achar, depois os registros vao ser ordenados de forma crescente e por fim sera feita a busca binaria) ");
+        printf("\n8 - Recuperacao Backup (ordenando de forma descrente todos os registros quando eles retornam do backup) ");
+        printf("\n9 - Sair do programa");
+        printf("\nOpcao que vc deseja: ");
+        scanf("%c%*c", &opcao);
+
+        setbuf(stdin, NULL);
+
+        switch(opcao)
+        {
+            case '1': cad();
+                break;
+
+            case '2': consult();
+                break;
+
+            case '3': alteracao();
+                break;
+
+            case '4': exclusao_log();
+                break;
+
+            case '5': exclusao_fis();
+                break;
+
+            case '6': ordena_cod();
+                break;
+
+            case '7': acha_nome();
+                break;
+
+            case '8': recuperacao_dados();
+                break;
+
+            case '9': printf("\n\nSaindo do programa");
+                break;
+
+            default: printf("\n\nOpcao %c invalida! As opcoes estao acima!", opcao);
+        }
+    } while (opcao != '9');
+
+    getchar();
+    return 0;
+}
+
+void cad()
+{
+    // system("cls");
+
+    if((fptr = fopen("Doceria.bi", "rb+")) == NULL)
+    {
+        if((fptr = fopen("Doceria.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro na criacao do arquivo!");
+            exit(1);
+        }
+    }
+
+    fseek(fptr, 0, 0);
+
+    printf("\nNome: ");
+    scanf("%[^\n]", D.nome_doceria);
+    printf("Codigo: ");
+    scanf("%d%*c", &D.codigo);
+    printf("Qtd de funcionarios: ");
+    scanf("%d%*c", &D.total_funcionarios);
+    printf("Arrecadacao: ");
+    scanf("%f%*c", &D.arrecadacao);
+    D.e = 0;
+
+    fseek(fptr, 0, 2);
+
+    fwrite(&D, sizeof(Doceria), 1, fptr);
+
+    fclose(fptr);
+}
+
+void consult()
+{
+    int escolha_usuario;
+
+    // system("cls");
+
+    if((fptr = fopen("Doceria.bi", "rb+")) == NULL)
+    {
+        if((fptr = fopen("Doceria.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro na criacao do arquivo!");
+            exit(1);
+        }
+    }
+
+    fseek(fptr, 0, 0);
+
+    printf("\n1 - Listar tudo");
+    printf("\n2 - Listar apenas as docerias com arrecadacao >= a 50k");
+    printf("\nQual a sua escolha: ");
+    scanf("%d%*c", &escolha_usuario);
+
+    if(escolha_usuario == 1)
+    {
+        while(fread(&D, sizeof(Doceria), 1, fptr))
+        {
+            if(D.e == 0)
+            {
+                printf("\n\nCodigo: %d", D.codigo);
+                printf("\nNome: %s", D.nome_doceria);
+                printf("\nQtd de funcionarios: %d", D.total_funcionarios);
+                printf("\nArrecadacao: %.2f", D.arrecadacao);
+            }
+        }
+    }
+    else if(escolha_usuario == 2)
+    {
+        while(fread(&D, sizeof(Doceria), 1, fptr))
+        {
+            if(D.e == 0)
+            {
+                if(D.arrecadacao >= 50000)
+                {
+                    printf("\n\nCodigo: %d", D.codigo);
+                    printf("\nNome: %s", D.nome_doceria);
+                    printf("\nQtd de funcionarios: %d", D.total_funcionarios);
+                    printf("\nArrecadacao: %.2f", D.arrecadacao);
+                }
+            }
+        }
+    }
+    else
+    {
+        printf("\n\nEsta opcao nao existe!");
+    }
+
+    getchar();
+
+    fclose(fptr);
+}
+
+void alteracao()
+{
+    int cod;
+
+    // system("cls");
+
+    if((fptr = fopen("Doceria.bi", "rb+")) == NULL)
+    {
+        if((fptr = fopen("Doceria.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro na criacao do arquivo!");
+            exit(1);
+        }
+    }
+
+    fseek(fptr, 0, 0);
+
+    printf("\nCod da doceria que deseja alterar a qtd de funcionarios: ");
+    scanf("%d%*c", &cod);
+
+    while(fread(&D, sizeof(Doceria), 1, fptr))
+    {
+        if(D.e == 0)
+        {
+            if(D.codigo == cod)
+            {
+                printf("\nNova qtd de funcionarios: ");
+                scanf("%d%*c", &D.total_funcionarios);
+                fseek(fptr, ftell(fptr) - sizeof(Doceria), 0);
+                fwrite(&D, sizeof(Doceria), 1, fptr);
+                fseek(fptr, 0, 2);
+            }
+        }
+    }
+
+    fclose(fptr);
+}
+
+void exclusao_log()
+{
+    char aux[20];
+
+    // system("cls");
+
+    if((fptr = fopen("Doceria.bi", "rb+")) == NULL)
+    {
+        if((fptr = fopen("Doceria.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro na criacao do arquivo!");
+            exit(1);
+        }
+    }
+
+    printf("\nNome da doceria que deseja exlcuir logicamente: ");
+    scanf("%[^\n]", &aux);
+
+    fseek(fptr, 0, 0);
+
+    while(fread(&D, sizeof(Doceria), 1, fptr))
+    {
+        if(D.e == 0)
+        {
+            if(strcmp(D.nome_doceria, aux) == 0)
+            {
+                D.e = 1;
+                fseek(fptr, ftell(fptr) - sizeof(Doceria), 0);
+                fwrite(&D, sizeof(Doceria), 1, fptr);
+                fseek(fptr, 0, 2);
+            }
+        }
+    }
+
+    fclose(fptr);
+}
+
+void exclusao_fis()
+{
+    FILE * fptr_arquivo_auxiliar, * fptr_arquivo_backup;
+
+    // system("cls");
+
+    if((fptr = fopen("Doceria.bi", "rb+")) == NULL)
+    {
+        if((fptr = fopen("Doceria.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro na criacao do arquivo!");
+            exit(1);
+        }
+    }
+
+    if((fptr_arquivo_auxiliar = fopen("Aux.bi", "wb")) == NULL)
+    {
+        printf("\n\nErro na criacao do arquivo aux!");
+        exit(1);
+    }
+
+    if((fptr_arquivo_backup = fopen("Backup.bi", "rb+")) == NULL)
+    {
+        if((fptr_arquivo_backup = fopen("Backup.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro na criacao do arquivo backup!");
+            exit(1);
+        }
+    }
+
+    fseek(fptr, 0, 0);
+
+    while(fread(&D, sizeof(Doceria), 1, fptr))
+    {
+       if(D.e == 0)
+        {
+            fseek(fptr_arquivo_auxiliar, 0, 2);
+            fwrite(&D, sizeof(Doceria), 1, fptr_arquivo_auxiliar);
+        }
+        else
+        {
+            fseek(fptr_arquivo_backup, 0, 2);
+            fwrite(&D, sizeof(Doceria), 1, fptr_arquivo_backup);
+        }
+    }
+
+    fclose(fptr_arquivo_auxiliar);
+    fclose(fptr);
+    fclose(fptr_arquivo_backup);
+
+    remove("Doceria.bi");
+    rename("Aux.bi", "Doceria.bi");
+}
+
+void ordena_cod()
+{
+    struct Doceria Doceria_aux1, Doceria_aux2;
+    int i, j, n;
+
+    // system("cls");
+
+    if((fptr = fopen("Doceria.bi", "rb+")) == NULL)
+    {
+        if((fptr = fopen("Doceria.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro na criacao do arquivo!");
+            exit(1);
+        }
+    }
+
+    fseek(fptr, 0, 2);
+    n = ftell(fptr) / sizeof(Doceria);
+
+    for(i = 0; i < n - 1; i++)
+    {
+        for(j = i + 1; j < n; j++)
+        {
+            fseek(fptr, i*sizeof(Doceria_aux1), 0);
+            fread(&Doceria_aux1, sizeof(Doceria), 1, fptr);
+
+            fseek(fptr, j*sizeof(Doceria_aux2), 0);
+            fread(&Doceria_aux2, sizeof(Doceria), 1, fptr);
+
+            if(Doceria_aux1.codigo < Doceria_aux2.codigo)
+            {
+                fseek(fptr, i*sizeof(Doceria), 0);
+                fwrite(&Doceria_aux2, sizeof(Doceria), 1, fptr);
+
+                fseek(fptr, j*sizeof(Doceria), 0);
+                fwrite(&Doceria_aux1, sizeof(Doceria), 1, fptr);
+            }
+        }
+    }
+
+    fclose(fptr);
+}
+
+void acha_nome()
+{
+    int i, j, n, posicao_do_registro;
+
+    struct Doceria Doceria_aux1, Doceria_aux2;
+
+    if((fptr = fopen("Doceria.bi", "rb+")) == NULL)
+    {
+        if((fptr = fopen("Doceria.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro!");
+            exit(1);
+        }
+    }
+
+    fseek(fptr, 0, 2);
+    n = ftell(fptr) / sizeof(D);
+
+    for(i = 0; i < n - 1; i++)
+    {
+        for(j = i + 1; j < n; j++)
+        {
+            fseek(fptr, i*sizeof(Doceria_aux1), 0);
+            fread(&Doceria_aux1, sizeof(Doceria_aux1), 1, fptr);
+
+            fseek(fptr, j*sizeof(Doceria_aux2), 0);
+            fread(&Doceria_aux2, sizeof(Doceria_aux2), 1, fptr);
+
+            if(strcmp(Doceria_aux1.nome_doceria, Doceria_aux2.nome_doceria) > 0)
+            {
+                fseek(fptr, i*sizeof(Doceria_aux2), 0);
+                fwrite(&Doceria_aux2, sizeof(Doceria_aux2), 1, fptr);
+
+                fseek(fptr, j*sizeof(Doceria_aux1), 0);
+                fwrite(&Doceria_aux1, sizeof(Doceria_aux1), 1, fptr);
+            }
+        }
+    }
+
+    fclose(fptr);
+
+    posicao_do_registro = posicao_registro();
+
+    if(posicao_do_registro == -1)
+    {
+        printf("\n\nRegistro nao existe ou na foi encotrado");
+    }
+    else
+    {
+        printf("\n\nPosicao do registro: %d", posicao_do_registro);
+    }
+
+    getchar();
+}
+
+
+int posicao_registro()
+{
+    int low, mid, high, n;
+    char nome[26];
+
+    if((fptr = fopen("Doceria.bi", "rb+")) == NULL)
+    {
+        if((fptr = fopen("Doceria.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro!");
+            exit(1);
+        }
+    }
+
+    printf("\nDoceria que deseja encontrar (digite o nome): ");
+    scanf("%[^\n]", &nome);
+
+    fseek(fptr, 0, 2);
+    n = ftell(fptr) / sizeof(D);
+
+    low = 0;
+    high = n - 1;
+
+    while(low <= high)
+    {
+        mid = (low + high) / 2;
+
+        fseek(fptr, mid * sizeof(D), 0);
+        fread(&D, sizeof(D), 1, fptr);
+
+        if(strcmp(D.nome_doceria, nome) > 0)
+        {
+            high = mid - 1;
+        }
+        else if(strcmp(D.nome_doceria, nome) < 0)
+        {
+            low = mid + 1;
+        }
+        else
+        {
+            return mid;
+        }
+    }
+
+    fclose(fptr);
+    return -1;
+}
+
+void recuperacao_dados()
+{
+    int cod;
+
+    FILE * fptr_arquivo_auxiliar, * fptr_arquivo_backup;
+
+    // system("cls");
+
+    if((fptr = fopen("Doceria.bi", "rb+")) == NULL)
+    {
+        if((fptr = fopen("Doceria.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro na criacao do arquivo!");
+            exit(1);
+        }
+    }
+
+    if((fptr_arquivo_auxiliar = fopen("Aux.bi", "wb")) == NULL)
+    {
+        printf("\n\nErro na criacao do arquivo aux!");
+        exit(1);
+    }
+
+    if((fptr_arquivo_backup = fopen("Backup.bi", "rb+")) == NULL)
+    {
+        if((fptr_arquivo_backup = fopen("Backup.bi", "wb")) == NULL)
+        {
+            printf("\n\nErro na criacao do arquivo backup!");
+            exit(1);
+        }
+    }
+
+    fseek(fptr_arquivo_backup, 0, 0);
+
+    printf("\nCod da doceria que deseja recuperar do backup: ");
+    scanf("%d%*c", &cod);
+
+    while(fread(&D, sizeof(Doceria), 1, fptr_arquivo_backup))
+    {
+        if(D.e == 1)
+        {
+            if(D.codigo == cod)
+            {
+                fseek(fptr, 0, 2);
+                D.e = 0;
+                fwrite(&D, sizeof(Doceria), 1, fptr);
+            }
+            else
+            {
+                fseek(fptr_arquivo_auxiliar, 0, 2);
+                fwrite(&D, sizeof(Doceria), 1, fptr_arquivo_auxiliar);
+            }
+        }
+    }
+
+    fclose(fptr);
+    fclose(fptr_arquivo_auxiliar);
+    fclose(fptr_arquivo_backup);
+
+    remove("Backup.bi");
+    rename("Aux.bi", "Backup.bi");
+}
+
